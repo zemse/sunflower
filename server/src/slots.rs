@@ -5,12 +5,15 @@ use ethers::{
     utils::keccak256,
 };
 
-fn hash_two(one: U256, two: U256) -> H256 {
-    let bytes = abi::encode(&[abi::Token::Uint(one), abi::Token::Uint(two)]);
-    H256::from(keccak256(bytes))
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct GenerateSlotsResult {
+    slots: Vec<U256>,
+    values: Vec<U256>,
 }
 
-pub async fn generate(addr: Address) -> Result<(Vec<U256>, Vec<U256>), String> {
+pub async fn generate(addr: Address) -> Result<GenerateSlotsResult, String> {
     let provider =
         Provider::<Http>::try_from(std::env::var("RPC_URL").expect("please pass RPC_URL env var"))
             .unwrap();
@@ -48,7 +51,7 @@ pub async fn generate(addr: Address) -> Result<(Vec<U256>, Vec<U256>), String> {
         values.push(value);
 
         if key == U256::one() && value == U256::zero() {
-            return  Err(format!("The address {} is probably not a valid gnosis safe since the owners mapping slot at sentinal address should be non-zero", addr));
+            return  Err(format!("The address {addr} is probably not a valid gnosis safe since the owners mapping slot at sentinal address should be non-zero"));
         }
 
         if value == U256::one() {
@@ -58,5 +61,10 @@ pub async fn generate(addr: Address) -> Result<(Vec<U256>, Vec<U256>), String> {
         }
     }
 
-    Ok((slots, values))
+    Ok(GenerateSlotsResult { slots, values })
+}
+
+fn hash_two(one: U256, two: U256) -> H256 {
+    let bytes = abi::encode(&[abi::Token::Uint(one), abi::Token::Uint(two)]);
+    H256::from(keccak256(bytes))
 }

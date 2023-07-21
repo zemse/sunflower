@@ -3,7 +3,7 @@ mod slots;
 #[rocket::get("/gen_slots?<address>")]
 async fn gen_slots(address: &str) -> String {
     let result = slots::generate(address.parse().unwrap()).await.unwrap();
-    format!("{:?}", result)
+    serde_json::to_string(&result).unwrap()
 }
 
 #[rocket::launch]

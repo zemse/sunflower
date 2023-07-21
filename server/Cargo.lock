@@ -2884,6 +2884,8 @@ version = "0.1.0"
 dependencies = [
  "ethers",
  "rocket",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 
