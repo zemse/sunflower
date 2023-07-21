@@ -10,7 +10,7 @@ fn hash_two(one: U256, two: U256) -> H256 {
     H256::from(keccak256(bytes))
 }
 
-pub async fn gen_slots(addr: Address) -> Result<(Vec<U256>, Vec<U256>), String> {
+pub async fn generate(addr: Address) -> Result<(Vec<U256>, Vec<U256>), String> {
     let provider =
         Provider::<Http>::try_from(std::env::var("RPC_URL").expect("please pass RPC_URL env var"))
             .unwrap();
