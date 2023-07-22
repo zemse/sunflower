@@ -7,3 +7,6 @@
 [submodule "contracts/lib/safe-contracts"]
 	path = contracts/lib/safe-contracts
 	url = https://github.com/safe-global/safe-contracts
+[submodule "contracts/lib/safe-core-protocol-demo"]
+	path = contracts/lib/safe-core-protocol-demo
+	url = https://github.com/5afe/safe-core-protocol-demo
