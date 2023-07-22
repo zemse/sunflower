@@ -9,11 +9,14 @@ import {SafeProtocolAction, SafeTransaction, SafeRootAccess} from "@safe-global/
 
 import {BasePluginWithEventMetadata, PluginMetadata} from "@5afe/safe-core-protocol-demo/contracts/Base.sol";
 
+import {CheckSignatures} from "./utils/CheckSignatures.sol";
+
 /// @title The Sunflower plugin for Gnosis Safe
 /// @notice This plugin is to be used for safes on L2 to use owners on L1 using zk proofs.
 contract SunflowerSafePlugin is
     ISafeProtocolPlugin,
-    BasePluginWithEventMetadata
+    BasePluginWithEventMetadata,
+    CheckSignatures
 {
     // Cache is used to prevent using zk proofs to prove the list of owners for every action.
     // After a long time, zk proof will be used to read owners from L1, however to reduce costs
@@ -45,7 +48,7 @@ contract SunflowerSafePlugin is
         SafeProtocolAction calldata action,
         uint8 operation,
         bytes calldata zkProof,
-        bytes[] calldata l1OwnerSignatures
+        bytes calldata l1OwnerSignatures
     ) external {
         address[] memory owners;
 
@@ -61,7 +64,14 @@ contract SunflowerSafePlugin is
             owners = cache[safe].owners;
         }
 
-        // TODO check signatures
+        // TODO review this code
+        checkSignatures({
+            threshold: 0, // TODO take from zk proof
+            dataHash: bytes32(0), // TODO do someting
+            data: action.data,
+            signatures: l1OwnerSignatures,
+            owners: owners
+        });
 
         // execute transaction
         if (address(manager) != address(0)) {
