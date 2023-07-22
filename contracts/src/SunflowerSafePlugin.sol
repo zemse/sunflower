@@ -10,6 +10,7 @@ import {SafeProtocolAction, SafeTransaction, SafeRootAccess} from "@safe-global/
 import {BasePluginWithEventMetadata, PluginMetadata} from "@5afe/safe-core-protocol-demo/contracts/Base.sol";
 
 import {CheckSignatures} from "./utils/CheckSignatures.sol";
+import {OptimismBlockCache} from "./OptimismBlockCache.sol";
 
 /// @title The Sunflower plugin for Gnosis Safe
 /// @notice This plugin is to be used for safes on L2 to use owners on L1 using zk proofs.
@@ -22,14 +23,19 @@ contract SunflowerSafePlugin is
     // After a long time, zk proof will be used to read owners from L1, however to reduce costs
     // some expiry like 6 hours can be used so that the Safe users can perform back to back
     // actions without using zk proofs every time.
-    struct Cache {
+    struct L1SafeOwnersCache {
         uint128 ttl;
         uint128 blockTimestamp;
         address[] owners;
     }
-    mapping(ISafe => Cache) public cache;
+    mapping(ISafe => L1SafeOwnersCache) public cache;
 
-    constructor()
+    // Contains valid block data
+    OptimismBlockCache blockCache;
+
+    constructor(
+        OptimismBlockCache blockCache_
+    )
         BasePluginWithEventMetadata(
             PluginMetadata({
                 name: "Sunflower Plugin",
@@ -39,7 +45,9 @@ contract SunflowerSafePlugin is
                 appUrl: "https://5afe.github.io/safe-core-protocol-demo/#/relay/${plugin}"
             })
         )
-    {}
+    {
+        blockCache = blockCache_;
+    }
 
     // inputs transaction & claimed owners & prooof & owner signatures
     function executeTransactionThroughManager(
