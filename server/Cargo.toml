@@ -11,3 +11,7 @@ rocket = "=0.5.0-rc.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
+
+axiom-eth = { path = "/Users/sohamzemse/Workspace/cloned-repos/axiom-eth/axiom-eth" }
+snark-verifier = { path = "/Users/sohamzemse/Workspace/cloned-repos/axiom-snark-verifier/snark-verifier", default-features = false, features = ["loader_halo2"], optional = true }
+snark-verifier-sdk = { path = "/Users/sohamzemse/Workspace/cloned-repos/axiom-snark-verifier/snark-verifier-sdk", default-features = false, features = ["loader_halo2"], optional = true }
