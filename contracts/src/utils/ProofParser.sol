@@ -12,7 +12,7 @@ uint constant THRESHOLD_SLOT = 4;
 
 import "forge-std/console.sol";
 
-contract Parser {
+contract ProofParser {
     address public immutable verifier;
 
     constructor(address _verifier) {

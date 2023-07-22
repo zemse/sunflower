@@ -10,6 +10,7 @@ import {SafeProtocolAction, SafeTransaction, SafeRootAccess} from "@safe-global/
 import {BasePluginWithEventMetadata, PluginMetadata} from "@5afe/safe-core-protocol-demo/contracts/Base.sol";
 
 import {CheckSignatures} from "./utils/CheckSignatures.sol";
+import {ProofParser} from "./utils/ProofParser.sol";
 import {OptimismBlockCache} from "./OptimismBlockCache.sol";
 
 /// @title The Sunflower plugin for Gnosis Safe
@@ -17,7 +18,8 @@ import {OptimismBlockCache} from "./OptimismBlockCache.sol";
 contract SunflowerSafePlugin is
     ISafeProtocolPlugin,
     BasePluginWithEventMetadata,
-    CheckSignatures
+    CheckSignatures,
+    ProofParser
 {
     // Cache is used to prevent using zk proofs to prove the list of owners for every action.
     // After a long time, zk proof will be used to read owners from L1, however to reduce costs
@@ -34,7 +36,8 @@ contract SunflowerSafePlugin is
     OptimismBlockCache blockCache;
 
     constructor(
-        OptimismBlockCache blockCache_
+        OptimismBlockCache blockCache_,
+        address plonkVerifier
     )
         BasePluginWithEventMetadata(
             PluginMetadata({
@@ -45,6 +48,7 @@ contract SunflowerSafePlugin is
                 appUrl: "https://5afe.github.io/safe-core-protocol-demo/#/relay/${plugin}"
             })
         )
+        ProofParser(plonkVerifier)
     {
         blockCache = blockCache_;
     }
@@ -55,7 +59,7 @@ contract SunflowerSafePlugin is
         ISafe safe,
         SafeProtocolAction calldata action,
         uint8 operation,
-        bytes calldata zkProof,
+        bytes[] calldata zkProof,
         bytes calldata l1OwnerSignatures
     ) external {
         address[] memory owners;
@@ -63,7 +67,18 @@ contract SunflowerSafePlugin is
         if (zkProof.length != 0) {
             // TODO
             // check if proof corresponds to correct owners and recent block
-            // save to cache
+            (
+                uint blockHash,
+                ,
+                address account,
+                uint ownersCount,
+                uint threshold,
+                address[] memory owners
+            ) = parse(zkProof);
+
+            // blockCache.getTimestamp(blockHash);
+
+            // save to cxache
         } else {
             require(
                 _l2CurrentTimestamp() <
