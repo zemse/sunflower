@@ -9,7 +9,7 @@ use ethers::{
 
 use serde::{Deserialize, Serialize};
 
-const SLOTS_LENGTH: usize = 6;
+const SLOTS_LENGTH: usize = 10;
 
 #[derive(Serialize, Deserialize)]
 pub struct GenerateSlotsResult {
@@ -66,14 +66,13 @@ pub async fn generate(addr: Address) -> Result<GenerateSlotsResult, String> {
         }
     }
 
-    let dead = H256::from_str("0x000000000000000000000000000000000000000000000000000000000000dead")
-        .unwrap();
+    let u256_singleton = U256::from_str("0xd9db270c1b5e3bd161e8c8503c55ceabee709552").unwrap();
 
     // TODO handle overflow of slots length
-    // while slots.len() < SLOTS_LENGTH {
-    //     slots.push(dead);
-    //     values.push(U256::zero())
-    // }
+    while slots.len() < SLOTS_LENGTH {
+        slots.push(H256::zero());
+        values.push(u256_singleton)
+    }
 
     Ok(GenerateSlotsResult { slots, values })
 }
