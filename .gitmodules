@@ -10,3 +10,6 @@
 [submodule "contracts/lib/safe-core-protocol-demo"]
 	path = contracts/lib/safe-core-protocol-demo
 	url = https://github.com/5afe/safe-core-protocol-demo
+[submodule "contracts/lib/openzeppelin-contracts"]
+	path = contracts/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
