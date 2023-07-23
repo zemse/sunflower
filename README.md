@@ -1,3 +1,5 @@
+![Trustless-3 copy](https://github.com/zemse/sunflower/assets/22412996/ae804c27-8be9-4d2b-bf05-203e9d3a5fc8)
+
 # sunflower
 
 This project is a Gnosis Safe plugin that is used by a multi-sig on L2 to inherit ownership of a multi-sig on L1.
