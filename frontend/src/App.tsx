@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import logo from './logo.svg';
 // import './App.css';
 import { BigNumber, BigNumberish, ethers } from 'ethers';
-import { safeL1, pluginL2 } from './ethers';
+import { safeL1, pluginL2, optimism } from './ethers';
 import { Button, Container, Form, ListGroup, Nav, NavDropdown, Navbar, Spinner } from 'react-bootstrap';
 import { keccak256 } from 'ethers/lib/utils';
 import axios from 'axios';
@@ -51,12 +51,20 @@ function App() {
   let [finalSubmitState, setFinalSubmitState] = useState(1);
 
   async function fetchProof() {
-    await new Promise(res => setTimeout(res, 1000));
-    return '0x12222'
-    // const resp = await axios.get("http://localhost:8000/gen_proof?address=0x6dC501a9911370285B3ECc2830dd481fFCDDa348", {
-    //   timeout: 1000_000
-    // })
-    // return resp.data
+    // await new Promise(res => setTimeout(res, 1000));
+    // return '0x12222'
+    const resp = await axios.get("http://localhost:8000/gen_proof?address=0x6dC501a9911370285B3ECc2830dd481fFCDDa348", {
+      timeout: 1_000_000
+    })
+    return resp.data
+  }
+
+  async function submit() {
+    await pluginL2.connect(new ethers.Wallet(
+      process.env.REACT_APP_PK_27!, optimism
+   )).executeTransaction("0x0000000000000000000000000000000000000000", "0x8eB9B5F9b631a52F9c9a47F574ec9eF5d3641421", [
+     to, 0, data
+   ], 0, ['0x'+proof], ethers.utils.concat([sigA!, sigB!])).then(() => setFinalSubmitState(3))
   }
 
 
@@ -117,10 +125,9 @@ function App() {
       </Navbar>
 
     <Container>
-      {l2State}
       {page === 1 ? <>
 
-        <p className="mt-4">safe address: <br /></p>  
+        <p className="mt-4">safe address on L1: <br /></p>  
         <ListGroup className="">
           <ListGroup.Item><span style={{fontFamily: "monospace"}}>0x6dC501a9911370285B3ECc2830dd481fFCDDa348</span></ListGroup.Item>
         </ListGroup>
@@ -132,7 +139,7 @@ function App() {
 
 
     {page === 2 ? <>
-      <p className="mt-4">safe address: <br /></p>  
+      <p className="mt-4">safe address on L2: <br /></p>  
         <ListGroup className="">
           <ListGroup.Item><span style={{fontFamily: "monospace"}}>0x8eB9B5F9b631a52F9c9a47F574ec9eF5d3641421</span></ListGroup.Item>
         </ListGroup>
@@ -169,19 +176,17 @@ function App() {
          {proof ? <>submit</>: null}
         </Button>
           </>: <>
-            <Button onClick={() => {
+            <Button  onClick={() => {
               setFinalSubmitState(2)
-              pluginL2.executeTransaction("0x0000000000000000000000000000000000000000", "0x8eB9B5F9b631a52F9c9a47F574ec9eF5d3641421", [
-                to, 0, data
-              ], 0, [proof], ethers.utils.concat([sigA!, sigB!])).then(() => setFinalSubmitState(3))
-            }}>Submit</Button>
+              submit()
+            }}>{finalSubmitState===1 ? 'Submit' : finalSubmitState===2 ? 'Submitting': 'Submitted'}</Button>
 
           </>}
 
 
 
 
-        {l2State === 4 && !proof ? <>
+        {l2State === 4 && (!proof || !sigA || !sigB) ? <>
           <p className='mt-4'>{l2State === 4? <>in the mean time we can collect signatures:</> : null}</p>
           <Button className='ml-2' disabled={signA_state !== 1} variant="primary" onClick={() => {
             set_signA_state(2); setTimeout(() => {

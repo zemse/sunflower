@@ -78,7 +78,7 @@ contract SunflowerSafePlugin is
             uint64 l1BlockTimestamp = blockCache.getTimestamp(blockHash);
             require(l1BlockTimestamp != 0, "block not cached");
             require(
-                l1BlockTimestamp + 1 hours > block.timestamp,
+                l1BlockTimestamp + 2 hours > block.timestamp,
                 "too old block"
             );
 

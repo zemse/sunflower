@@ -18,7 +18,7 @@ export const safeL2 = new ethers.Contract(
   optimism
 );
 export const pluginL2 = new ethers.Contract(
-  "0x77bcaf6bd465d971a6058042f7b205684f715a05",
+  "0x28F22358159f4B48F7E54E352ACF6a637F06Ab72",
   [
     "function executeTransaction(address manager,address safe,(address,uint256,bytes) calldata action,uint8 operation,bytes[] calldata zkProof,bytes calldata l1OwnerSignatures) external",
     "function pluginNonce() public view returns (uint256)",
