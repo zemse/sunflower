@@ -58,6 +58,7 @@ contract CheckSignatures is SignatureDecoder, ISignatureValidatorConstants {
         bytes32 r;
         bytes32 s;
         uint256 i;
+        uint256 o;
         for (i = 0; i < requiredSignatures; i++) {
             (v, r, s) = signatureSplit(signatures, i);
             if (v == 0) {
@@ -130,9 +131,14 @@ contract CheckSignatures is SignatureDecoder, ISignatureValidatorConstants {
                 // Use ecrecover with the messageHash for EOA signatures
                 currentOwner = ecrecover(dataHash, v, r, s);
             }
+
+            while (owners[o] != currentOwner) {
+                o++;
+            }
+
             require(
                 currentOwner > lastOwner &&
-                    owners[i] == currentOwner &&
+                    owners[o] == currentOwner &&
                     currentOwner != SENTINEL_OWNERS,
                 "GS026"
             );

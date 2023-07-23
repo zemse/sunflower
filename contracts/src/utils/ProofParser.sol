@@ -25,7 +25,7 @@ contract ProofParser {
         public
         view
         returns (
-            uint blockHash,
+            bytes32 blockHash,
             uint blockNumber,
             address account,
             uint ownersCount,
@@ -46,13 +46,18 @@ contract ProofParser {
         uint[] memory slots,
         uint[] memory values,
         uint startLocation
-    ) public view returns (uint blockHash, uint blockNumber, address account) {
+    )
+        public
+        view
+        returns (bytes32 blockHash, uint blockNumber, address account)
+    {
         (bool success, ) = verifier.staticcall(proof);
         require(success, "Proof verification failed");
 
-        blockHash =
+        blockHash = bytes32(
             (uint256(bytes32(proof[384:384 + 32])) << 128) |
-            uint128(bytes16(proof[384 + 48:384 + 64]));
+                uint128(bytes16(proof[384 + 48:384 + 64]))
+        );
         blockNumber = uint256(bytes32(proof[384 + 64:384 + 96]));
         account = address(bytes20(proof[384 + 108:384 + 128]));
 
@@ -81,7 +86,7 @@ contract ProofParser {
         public
         view
         returns (
-            uint blockHash,
+            bytes32 blockHash,
             uint blockNumber,
             address account,
             uint[] memory slots,
@@ -102,7 +107,7 @@ contract ProofParser {
 
         for (uint i = 1; i < proofs.length; i++) {
             (
-                uint _blockHash,
+                bytes32 _blockHash,
                 uint _blockNumber,
                 address _account
             ) = parseSingleProof(proofs[i], slots, values, i * SLOTS_PER_PROOF);

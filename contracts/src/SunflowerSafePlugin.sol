@@ -27,13 +27,15 @@ contract SunflowerSafePlugin is
     // actions without using zk proofs every time.
     struct L1SafeOwnersCache {
         uint128 ttl;
-        uint128 blockTimestamp;
+        uint128 l1BlockTimestamp;
         address[] owners;
     }
-    mapping(ISafe => L1SafeOwnersCache) public cache;
+    mapping(ISafe => L1SafeOwnersCache) public ownersCache;
 
     // Contains valid block data
     OptimismBlockCache blockCache;
+
+    uint public pluginNonce;
 
     constructor(
         OptimismBlockCache blockCache_,
@@ -54,7 +56,7 @@ contract SunflowerSafePlugin is
     }
 
     // inputs transaction & claimed owners & prooof & owner signatures
-    function executeTransactionThroughManager(
+    function executeTransaction(
         ISafeProtocolManager manager,
         ISafe safe,
         SafeProtocolAction calldata action,
@@ -63,44 +65,66 @@ contract SunflowerSafePlugin is
         bytes calldata l1OwnerSignatures
     ) external {
         address[] memory owners;
+        uint threshold;
 
         if (zkProof.length != 0) {
-            // TODO
-            // check if proof corresponds to correct owners and recent block
-            (
-                uint blockHash,
-                ,
-                address account,
-                uint ownersCount,
-                uint threshold,
-                address[] memory owners
-            ) = parse(zkProof);
+            bytes32 blockHash;
+            address account;
 
-            // blockCache.getTimestamp(blockHash);
+            // verifies zk proof and parses the instances
+            (blockHash, , account, , threshold, owners) = parse(zkProof);
 
-            // save to cxache
+            // check block hash
+            uint64 l1BlockTimestamp = blockCache.getTimestamp(blockHash);
+            require(l1BlockTimestamp != 0, "block not cached");
+            require(
+                l1BlockTimestamp + 1 hours > block.timestamp,
+                "too old block"
+            );
+
+            // save to cache
+            require(
+                ownersCache[safe].l1BlockTimestamp == 0 ||
+                    l1BlockTimestamp > ownersCache[safe].l1BlockTimestamp,
+                "more recent block already in cache"
+            );
         } else {
             require(
                 _l2CurrentTimestamp() <
-                    cache[safe].blockTimestamp + cache[safe].ttl
+                    ownersCache[safe].l1BlockTimestamp + ownersCache[safe].ttl
             );
-            owners = cache[safe].owners;
+            owners = ownersCache[safe].owners;
         }
 
-        // TODO review this code
-        checkSignatures({
-            threshold: 0, // TODO take from zk proof
-            dataHash: bytes32(0), // TODO do someting
-            data: action.data,
-            signatures: l1OwnerSignatures,
-            owners: owners
-        });
+        {
+            uint currentNonce = pluginNonce++;
+
+            bytes memory encodedTx = encodeTx({
+                to: action.to,
+                value: action.value,
+                data: action.data,
+                operation: 0,
+                chainId: getChainId(),
+                nonce: currentNonce
+            });
+
+            bytes32 dataHash = keccak256(encodedTx);
+
+            // check if the signatures are from the L1 owners
+            checkSignatures(
+                threshold,
+                dataHash,
+                encodedTx,
+                l1OwnerSignatures,
+                owners
+            );
+        }
 
         // execute transaction
         if (address(manager) != address(0)) {
             // go through the manager as a mediator plugin.
             // requires this plugin to be whitelisted in the manager plugin.
-            uint256 nonce = uint256(
+            uint256 safeNonce = uint256(
                 keccak256(abi.encode(this, manager, safe, action))
             );
             if (operation == 0) {
@@ -110,12 +134,12 @@ contract SunflowerSafePlugin is
                 actions[0] = action;
                 manager.executeTransaction(
                     safe,
-                    SafeTransaction(actions, nonce, bytes32(0))
+                    SafeTransaction(actions, safeNonce, bytes32(0))
                 );
             } else if (operation == 1) {
                 manager.executeRootAccess(
                     safe,
-                    SafeRootAccess(action, nonce, bytes32(0))
+                    SafeRootAccess(action, safeNonce, bytes32(0))
                 );
             } else {
                 revert("invalid opr");
@@ -132,8 +156,39 @@ contract SunflowerSafePlugin is
         }
     }
 
+    // keccak256("SunflowerSafePluginEthParis")
+    bytes32 constant domainSeparator =
+        0x6c426e77058bfdeef67364197b83db6647aa1e9fad867312eae40d220d014ba4;
+
+    function encodeTx(
+        address to,
+        uint256 value,
+        bytes calldata data,
+        uint8 operation,
+        uint256 chainId,
+        uint256 nonce
+    ) public pure returns (bytes memory) {
+        bytes32 safeTxHash = keccak256(
+            abi.encode(to, value, keccak256(data), operation, nonce)
+        );
+        return
+            abi.encodePacked(
+                bytes1(0x19),
+                bytes1(0x01),
+                domainSeparator,
+                chainId,
+                safeTxHash
+            );
+    }
+
     /// @notice Allows overriding this function to use different L2s requirements.
     function _l2CurrentTimestamp() public view virtual returns (uint) {
         return block.timestamp;
+    }
+
+    function getChainId() public view returns (uint id) {
+        assembly {
+            id := chainid()
+        }
     }
 }

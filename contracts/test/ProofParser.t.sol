@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
@@ -25,7 +26,7 @@ contract ParserTest is Test {
         uint[] memory slots = new uint[](SLOTS_PER_PROOF);
         uint[] memory values = new uint[](SLOTS_PER_PROOF);
 
-        (uint blockHash, uint blockNumber, address account) = parser
+        (bytes32 blockHash, uint blockNumber, address account) = parser
             .parseSingleProof(proof_1, slots, values, 0);
 
         assertEq(
@@ -41,7 +42,7 @@ contract ParserTest is Test {
         proofs[0] = proof_1;
 
         (
-            uint blockHash,
+            bytes32 blockHash,
             uint blockNumber,
             address account,
             uint[] memory slots,
