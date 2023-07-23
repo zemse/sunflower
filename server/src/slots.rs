@@ -3,7 +3,7 @@ use std::str::FromStr;
 use ethers::{
     abi::{self, Address},
     providers::{Http, Middleware, Provider},
-    types::{BigEndianHash, H256, U256},
+    types::{BigEndianHash, BlockId, BlockNumber, H256, U256, U64},
     utils::keccak256,
 };
 
@@ -17,13 +17,20 @@ pub struct GenerateSlotsResult {
     pub values: Vec<U256>,
 }
 
-pub async fn generate(addr: Address) -> Result<GenerateSlotsResult, String> {
+pub async fn generate(
+    addr: Address,
+    block_number: Option<u32>,
+) -> Result<GenerateSlotsResult, String> {
+    let block_id = if block_number.is_some() {
+        BlockId::Number(BlockNumber::Number(U64::from(block_number.unwrap())))
+    } else {
+        BlockId::Number(BlockNumber::Latest)
+    };
+
     let provider = Provider::<Http>::try_from(
         std::env::var("JSON_RPC_URL").expect("please pass JSON_RPC_URL env var"),
     )
     .unwrap();
-
-    // TODO cache the block hash might be needed for the current block before generating slots
 
     let owners_mapping_slot = H256::from_uint(&U256::from(2));
     let owners_count_slot = H256::from_uint(&U256::from(3));
@@ -32,12 +39,12 @@ pub async fn generate(addr: Address) -> Result<GenerateSlotsResult, String> {
     let mut slots = vec![owners_count_slot, threshold_count_slot];
     let mut values = vec![
         provider
-            .get_storage_at(addr, slots[0], None) // TODO some block
+            .get_storage_at(addr, slots[0], Some(block_id))
             .await
             .unwrap()
             .into_uint(),
         provider
-            .get_storage_at(addr, slots[1], None) // TODO some block
+            .get_storage_at(addr, slots[1], Some(block_id))
             .await
             .unwrap()
             .into_uint(),
@@ -49,7 +56,7 @@ pub async fn generate(addr: Address) -> Result<GenerateSlotsResult, String> {
         slots.push(slot);
 
         let value = provider
-            .get_storage_at(addr, slot, None) // TODO some block
+            .get_storage_at(addr, slot, Some(block_id))
             .await
             .unwrap()
             .into_uint();
